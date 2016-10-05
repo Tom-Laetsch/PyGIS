@@ -5,27 +5,18 @@ import shapefile
 class ShpWrap(object):
     def __init__(self, shpfile, names=None, verbose=False):
         self.shpfile = shpfile
-        self.names = names
         self.verbose = verbose
         self.sf = shapefile.Reader(shpfile)
-        self.shapes = (self.sf).shapes()
-        self.points_dict = self.make_points_dict()
+        #self.shapes = (self.sf).shapes()
+        self.points_dict = self._make_points_dict()
 
-    def make_points_dict(self):
-        names = self.names
-        num_shapes = len(self.shapes)
-        if type(names) == str:
-            area_prefix = names
-            names = None
-        else:
-            area_prefix = "AREA"
-        if names == None or type(names) != list or len(names) != num_shapes:
-            #use default
-            names = [area_prefix + "_" + str(i) for i in range(num_shapes)]
-        if self.names != names: self.names = names
+    def _make_points_dict(self):
         points_dict = dict()
-        for i in range(num_shapes):
-            parts = self.shapes[i].parts
+        names = []
+        name_cnt = 0
+        for record, shape in zip(self.sf.iterRecords(), self.sf.iterShapes()):
+            names.append(record[4])
+            parts = shape.parts
             pR = 0
             tot_xs = []
             tot_ys = []
@@ -35,19 +26,20 @@ class ShpWrap(object):
                     ys = []
                     pL = parts[j]
                     pR = parts[j+1]
-                    for x,y in self.shapes[i].points[pL:pR]:
+                    for x,y in shape.points[pL:pR]:
                         xs.append(x)
                         ys.append(y)
                     tot_xs.append(xs)
                     tot_ys.append(ys)
             xs = []
             ys = []
-            for x,y in self.shapes[i].points[pR:]:
+            for x,y in shape.points[pR:]:
                 xs.append(x)
                 ys.append(y)
             tot_xs.append(xs)
             tot_ys.append(ys)
-            points_dict[names[i]] = zip(tot_xs,tot_ys)
+            points_dict[names[name_cnt]] = zip(tot_xs,tot_ys)
+            name_cnt += 1
         return points_dict
 
     def make_points_list(self):
