@@ -1,20 +1,20 @@
 from __future__ import print_function, division
 #import shapefiles; require library pyshp: pip install pyshp
 import shapefile
+from .GIShelpers import in_polygon
 
-class ShpWrap(object):
-    def __init__(self, shpfile, names=None, verbose=False):
+class ShPy(object):
+    def __init__(self, shpfile, keys=None, verbose=False):
         self._shpfile = shpfile
         self.verbose = verbose
         self._sfreader = shapefile.Reader(shpfile)
-        self._points_dict = self._make_points_dict()
 
-    def _make_points_dict(self):
+        #create the dictionary of points
         points_dict = dict()
-        names = []
-        name_cnt = 0
+        keys = []
+        key_cnt = 0
         for record, shape in zip(self._sfreader.iterRecords(), self._sfreader.iterShapes()):
-            names.append(record[4])
+            keys.append(record[4])
             parts = shape.parts
             pR = 0
             tot_xs = []
@@ -37,21 +37,42 @@ class ShpWrap(object):
                 ys.append(y)
             tot_xs.append(xs)
             tot_ys.append(ys)
-            points_dict[names[name_cnt]] = zip(tot_xs,tot_ys)
-            name_cnt += 1
-        return points_dict
+            points_dict[keys[key_cnt]] = zip(tot_xs,tot_ys)
+            key_cnt += 1
+        self._points_dict = points_dict
+
+        xs = []
+        ys = []
+        keys = []
+        for key in points_dict.keys():
+            for x,y in points_dict[key]:
+                keys.append(key)
+                xs.append(x)
+                ys.append(y)
+        self._xs_ys_keys = (xs,ys,keys)
 
     @property
     def points_dict(self):
         return self._points_dict
 
-    def make_points_list(self):
-        xs = []
-        ys = []
-        names = []
-        for key in self._points_dict.keys():
-            for x,y in self._points_dict[key]:
-                names.append(key)
-                xs.append(x)
-                ys.append(y)
-        return xs,ys,names
+    @property
+    def sfreader(self):
+        return self._sfreader
+
+    @property
+    def shpfile(self):
+        return self._shpfile
+
+    @property
+    def xs_ys_keys(self):
+        return self._xs_ys_keys
+
+    def key_by_point(self,point):
+        # point = (x,y)
+        # returns the (first found) key in points_dict where point lands inside
+        # If no key found, returns None
+        xs,ys,keys = self.xs_ys_keys
+        for i, key in enumerate(keys):
+            if in_polygon(point = point, poly = (xs[i],ys[i])):
+                return key
+        return None
