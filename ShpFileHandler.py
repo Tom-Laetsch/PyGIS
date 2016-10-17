@@ -3,8 +3,10 @@ from __future__ import print_function, division
 import shapefile
 from .GIShelpers import in_polygon
 
+__all__ = ['ShPy']
+
 class ShPy(object):
-    def __init__(self, shpfile, keys=None, verbose=False):
+    def __init__(self, shpfile, record_key = None, verbose=False):
         self._shpfile = shpfile
         self.verbose = verbose
         self._sfreader = shapefile.Reader(shpfile)
@@ -14,7 +16,13 @@ class ShPy(object):
         keys = []
         key_cnt = 0
         for record, shape in zip(self._sfreader.iterRecords(), self._sfreader.iterShapes()):
-            keys.append(record[4])
+            while record_key not in range( len(record) ):
+                print("Current part label types:")
+                for r in range( len(record) ):
+                    print("\t%d) %s" % (r,record[r]))
+                record_key = int(input("Selection? "))
+            self.record_key = record_key
+            keys.append(record[record_key])
             parts = shape.parts
             pR = 0
             tot_xs = []

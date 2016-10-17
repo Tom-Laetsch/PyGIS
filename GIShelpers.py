@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+__all__ = ['in_polygon']
+
 def in_polygon(point, #(x,y) tuple to test if in polygon
                poly, #([xs], [ys]) tuple of xs and ys tracing polygon
                verbose = False):
