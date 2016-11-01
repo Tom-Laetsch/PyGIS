@@ -15,6 +15,10 @@ class ShPy(object):
         points_dict = dict()
         keys = []
         key_cnt = 0
+        lon_min = None
+        lon_max = None
+        lat_min = None
+        lat_max = None
         for record, shape in zip(self._sfreader.iterRecords(), self._sfreader.iterShapes()):
             while record_key not in range( len(record) ):
                 print("Current part label types:")
@@ -25,39 +29,57 @@ class ShPy(object):
             keys.append(record[record_key])
             parts = shape.parts
             pR = 0
-            tot_xs = []
-            tot_ys = []
+            tot_lons = []
+            tot_lats = []
             if len(parts) > 1:
                 for j in range(len(parts) - 1):
-                    xs = []
-                    ys = []
+                    lons = []
+                    lats = []
                     pL = parts[j]
                     pR = parts[j+1]
-                    for x,y in shape.points[pL:pR]:
-                        xs.append(x)
-                        ys.append(y)
-                    tot_xs.append(xs)
-                    tot_ys.append(ys)
-            xs = []
-            ys = []
-            for x,y in shape.points[pR:]:
-                xs.append(x)
-                ys.append(y)
-            tot_xs.append(xs)
-            tot_ys.append(ys)
-            points_dict[keys[key_cnt]] = zip(tot_xs,tot_ys)
+                    for lon,lat in shape.points[pL:pR]:
+                        if any(val is None for val in [lon_min,lon_max,lat_min,lat_max]):
+                            lon_min = lon
+                            lon_max = lon
+                            lat_min = lat
+                            lat_max = lat
+                        else:
+                            if lon_min > lon:
+                                lon_min = lon
+                            if lon_max < lon:
+                                lon_max = lon
+                            if lat_min > lat:
+                                lat_min = lat
+                            if lat_max < lat:
+                                lat_max = lat
+                        lons.append(lon)
+                        lats.append(lat)
+                    tot_lons.append(lons)
+                    tot_lats.append(lats)
+            lons = []
+            lats = []
+            for lon,lat in shape.points[pR:]:
+                lons.append(lon)
+                lats.append(lat)
+            tot_lons.append(lons)
+            tot_lats.append(lats)
+            points_dict[keys[key_cnt]] = zip(tot_lons,tot_lats)
             key_cnt += 1
         self._points_dict = points_dict
+        self._lon_min = lon_min
+        self._lon_max = lon_max
+        self._lat_min = lat_min
+        self._lat_max = lat_max
 
-        xs = []
-        ys = []
+        lons = []
+        lats = []
         keys = []
         for key in points_dict.keys():
-            for x,y in points_dict[key]:
+            for lon,lat in points_dict[key]:
                 keys.append(key)
-                xs.append(x)
-                ys.append(y)
-        self._xs_ys_keys = (xs,ys,keys)
+                lons.append(lon)
+                lats.append(lat)
+        self._lons_lats_keys = (lons,lats,keys)
 
     @property
     def points_dict(self):
@@ -72,15 +94,24 @@ class ShPy(object):
         return self._shpfile
 
     @property
-    def xs_ys_keys(self):
-        return self._xs_ys_keys
+    def lons_lats_keys(self):
+        return self._lons_lats_keys
+
+    @property
+    def bounding_box( self ):
+        """
+        returns bounding box lon_min,lat_min,lon_max,lat_max
+        """
+        return self._lon_min, self._lat_min, self._lon_max, self._lat_max
 
     def key_by_point(self,point):
-        # point = (x,y)
-        # returns the (first found) key in points_dict where point lands inside
-        # If no key found, returns None
-        xs,ys,keys = self.xs_ys_keys
+        """
+        point = (lon,lat)
+        returns the (first found) key in points_dict where point lands inside
+        If no key found, returns None
+        """
+        lons,lats,keys = self.lons_lats_keys
         for i, key in enumerate(keys):
-            if in_polygon(point = point, poly = (xs[i],ys[i])):
+            if in_polygon(point = point, poly = (lons[i],lats[i])):
                 return key
         return None
