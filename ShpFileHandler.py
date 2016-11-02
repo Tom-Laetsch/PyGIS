@@ -100,9 +100,9 @@ class ShPy(object):
     @property
     def bounding_box( self ):
         """
-        returns bounding box lon_min,lat_min,lon_max,lat_max
+        returns bounding box in two tuples: (x_min,y_min), (x_max,y_max)
         """
-        return self._lon_min, self._lat_min, self._lon_max, self._lat_max
+        return tuple([self._lon_min, self._lat_min]), tuple([self._lon_max, self._lat_max])
 
     def key_by_point(self,point):
         """
