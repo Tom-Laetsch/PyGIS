@@ -73,6 +73,8 @@ class ShPy(object):
         self._sfreader = shapefile.Reader(shpfile)
         if title is None:
             self._title = basename(self.shpfile)
+        else:
+            self._title = title
         #create the dictionary of points
         parts_dict = dict()
         keys = []
