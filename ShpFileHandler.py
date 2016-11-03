@@ -9,7 +9,13 @@ from .GIShelpers import in_polygon
 
 __all__ = ['ShPy']
 
-def show_ShPy( ShPy_Obj, figsize = 5, xlim = None, ylim = None, key = None ):
+def show_ShPy( ShPy_Obj,
+               figsize = 5,
+               xlim = None,
+               ylim = None,
+               facecolor = 'blue',
+               alpha = .33,
+               key = None ):
         if key in ShPy_Obj.parts_dict.keys():
             xs = ShPy_Obj.parts_dict[key]["lons"]
             ys = ShPy_Obj.parts_dict[key]["lats"]
@@ -55,7 +61,7 @@ def show_ShPy( ShPy_Obj, figsize = 5, xlim = None, ylim = None, key = None ):
         ax = fig.add_subplot(111)
         for i in range(len(all_verts)):
             path = Path(all_verts[i], all_codes[i])
-            patch = patches.PathPatch(path, facecolor='none', lw=1)
+            patch = patches.PathPatch(path, facecolor=facecolor, alpha =alpha, lw=1)
             ax.add_patch(patch)
         ax.set_xlim(x0,x1)
         ax.set_ylim(y0,y1)
@@ -186,5 +192,12 @@ class ShPy(object):
                 return key
         return None
 
-    def show( self, figsize = 5, xlim = None, ylim = None, key = None ):
-        show_ShPy( self, figsize = figsize, xlim = xlim, ylim = ylim, key = key )
+    def show( self,
+              figsize = 5,
+              xlim = None,
+              ylim = None,
+              facecolor = "blue",
+              alpha = 0.33,
+              key = None ):
+        show_ShPy( self, figsize = figsize, xlim = xlim, ylim = ylim,
+                   facecolor = facecolor, alpha = alpha, key = key )
