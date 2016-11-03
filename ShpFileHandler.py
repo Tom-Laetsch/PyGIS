@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 #import shapefiles; require library pyshp: pip install pyshp
+from os.path import basename
 import shapefile
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
@@ -14,10 +15,11 @@ def show_ShPy( ShPy_Obj, figsize = 5, xlim = None, ylim = None, key = None ):
             ys = ShPy_Obj.parts_dict[key]["lats"]
             names = [key]*len(xs)
             bottom_left, top_right = ShPy_Obj.bounding_box_by_key( key )
+            title = key
         else: #whole enchalada
             xs, ys, names = ShPy_Obj.lons_lats_keys
             bottom_left, top_right = ShPy_Obj.bounding_box
-
+            title = ShPy_Obj.title
         all_codes = []
         all_verts = []
         for lons, lats in zip(xs,ys):
@@ -49,7 +51,7 @@ def show_ShPy( ShPy_Obj, figsize = 5, xlim = None, ylim = None, key = None ):
             xlen = int(xy_ratio * figsize)
             ylen = figsize
 
-        fig = plt.figure(figsize = (xlen,ylen))
+        fig = plt.figure( figsize = (xlen,ylen) )
         ax = fig.add_subplot(111)
         for i in range(len(all_verts)):
             path = Path(all_verts[i], all_codes[i])
@@ -57,22 +59,25 @@ def show_ShPy( ShPy_Obj, figsize = 5, xlim = None, ylim = None, key = None ):
             ax.add_patch(patch)
         ax.set_xlim(x0,x1)
         ax.set_ylim(y0,y1)
+        plt.title( title )
         plt.show()
 
 class ShPy(object):
-    def __init__(self, shpfile, record_key = None, verbose=False ):
+    def __init__( self,
+                  shpfile,
+                  record_key = None,
+                  title = None,
+                  verbose=False ):
         self._shpfile = shpfile
         self.verbose = verbose
         self._sfreader = shapefile.Reader(shpfile)
+        if title is None:
+            self._title = basename(self.shpfile)
         #create the dictionary of points
         parts_dict = dict()
         keys = []
         lons = []
         lats = []
-        lon_min = None
-        lon_max = None
-        lat_min = None
-        lat_max = None
         for shape_n, rs in enumerate(self._sfreader.iterShapeRecords()):
             record = rs.record
             shape = rs.shape
@@ -120,12 +125,21 @@ class ShPy(object):
                                     top_right = (part_lon_max, part_lat_max) )
 
         self._parts_dict = parts_dict
-        lon_min, lat_min, lon_max, lat_max = self._sfreader.bbox 
+        lon_min, lat_min, lon_max, lat_max = self._sfreader.bbox
         self._bottom_left = (lon_min, lat_min)
         self._top_right = (lon_max, lat_max)
 
         #store the overall lons/lats/keys
         self._lons_lats_keys = (lons,lats,keys)
+
+    @property
+    def title( self ):
+        return self._title
+
+    @title.setter
+    def title( self, value ):
+        self._title = value
+
 
     @property
     def parts_dict(self):
