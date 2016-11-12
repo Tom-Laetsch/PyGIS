@@ -192,6 +192,19 @@ class ShPy(object):
                 return key
         return None
 
+    def point_in_key( self,point,key ):
+        """
+        point = (lon,lat)
+        returns the (first found) key in parts_dict where point lands inside
+        If no key found, returns None
+        """
+        key_dict = self.parts_dict.get(key,None)
+        if not key_dict is None:
+            for lons, lats in zip( key_dict['lons'],key_dict['lats'] ):
+                if in_polygon(point = point, poly = (lons,lats)):
+                    return True
+        return False
+
     def show( self,
               figsize = 5,
               xlim = None,
