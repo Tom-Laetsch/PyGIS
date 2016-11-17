@@ -2,85 +2,19 @@ from __future__ import print_function, division
 #import shapefiles; require library pyshp: pip install pyshp
 from os.path import basename
 import shapefile
-import matplotlib.pyplot as plt
-from matplotlib.path import Path
-import matplotlib.patches as patches
 from .GIShelpers import in_polygon
 
-__all__ = ['ShPy']
+__all__ = ['ShPy', 'ShPyVis']
 
-def show_ShPy( ShPy_Obj,
-               figsize = 5,
-               xlim = None,
-               ylim = None,
-               facecolor = 'blue',
-               alpha = .33,
-               key = None ):
-        if key in ShPy_Obj.parts_dict.keys():
-            xs = ShPy_Obj.parts_dict[key]["lons"]
-            ys = ShPy_Obj.parts_dict[key]["lats"]
-            names = [key]*len(xs)
-            bottom_left, top_right = ShPy_Obj.bounding_box_by_key( key )
-            title = key
-        else: #whole enchalada
-            xs, ys, names = ShPy_Obj.lons_lats_keys
-            bottom_left, top_right = ShPy_Obj.bounding_box
-            title = ShPy_Obj.title
-        all_codes = []
-        all_verts = []
-        for lons, lats in zip(xs,ys):
-            all_verts.append( list(zip(lons,lats)) )
-            all_codes.append( [Path.MOVETO] + [Path.LINETO]*(len(lons) - 2) + [Path.CLOSEPOLY] )
-
-        try:
-            x0,x1 = xlim
-        except:
-            x0,x1 = bottom_left[0], top_right[0]
-            xbuff = 0.01 * (x1 - x0)
-            x0 = x0 - xbuff
-            x1 = x1 + xbuff
-        try:
-            y0,y1 = ylim
-        except:
-            y0,y1 = bottom_left[1], top_right[1]
-            ybuff = 0.01 * (y1 - y0)
-            y0 = y0 - ybuff
-            y1 = y1 + ybuff
-
-        try:
-            xlen, ylen = figsize
-        except:
-            dx = x1-x0
-            dy = y1-y0
-            xy_ratio = dx/dy
-            if not isinstance(figsize,int): figsize = 5
-            xlen = int(xy_ratio * figsize)
-            ylen = figsize
-
-        fig = plt.figure( figsize = (xlen,ylen) )
-        ax = fig.add_subplot(111)
-        for i in range(len(all_verts)):
-            path = Path(all_verts[i], all_codes[i])
-            patch = patches.PathPatch(path, facecolor=facecolor, alpha =alpha, lw=1)
-            ax.add_patch(patch)
-        ax.set_xlim(x0,x1)
-        ax.set_ylim(y0,y1)
-        plt.title( title )
-        plt.show()
 
 class ShPy(object):
     def __init__( self,
                   shpfile,
                   record_key = None,
-                  title = None,
                   verbose=False ):
         self._shpfile = shpfile
         self.verbose = verbose
         self._sfreader = shapefile.Reader(shpfile)
-        if title is None:
-            self._title = basename(self.shpfile)
-        else:
-            self._title = title
         #create the dictionary of points
         parts_dict = dict()
         keys = []
@@ -141,15 +75,6 @@ class ShPy(object):
         self._lons_lats_keys = (lons,lats,keys)
 
     @property
-    def title( self ):
-        return self._title
-
-    @title.setter
-    def title( self, value ):
-        self._title = value
-
-
-    @property
     def parts_dict(self):
         return self._parts_dict
 
@@ -205,12 +130,129 @@ class ShPy(object):
                     return True
         return False
 
-    def show( self,
-              figsize = 5,
-              xlim = None,
-              ylim = None,
-              facecolor = "blue",
-              alpha = 0.33,
-              key = None ):
-        show_ShPy( self, figsize = figsize, xlim = xlim, ylim = ylim,
-                   facecolor = facecolor, alpha = alpha, key = key )
+
+class ShPyVis( ShPy ):
+    def __init__( self,
+                  ShPy_Obj,
+                  plt,
+                  figsize = 5,
+                  xlim = None,
+                  ylim = None,
+                  facecolor = 'blue',
+                  alpha = .33):
+        self._ShPy_Obj = ShPy_Obj
+        self._plt = plt
+        self.fig_attrs(figsize, xlim, ylim, facecolor, alpha)
+
+    def patch_attrs_setter( self,
+                            figsize = 5,
+                            xlim = None,
+                            ylim = None,
+                            facecolor = 'blue',
+                            alpha = 0.33,
+                            border_width = 1):
+
+        self.figsize = figsize
+        self.xlim = xlim
+        self.ylim = ylim
+        self.facecolor = facecolor
+        self.alpha = alpha
+        self.border_width = border_width
+
+    def _background_fig_ax( self, key = None ):
+        from matplotlib.path import Path
+        import matplotlib.patches as patches
+        if key in self._ShPy_Obj.parts_dict.keys():
+            xs = self._ShPy_Obj.parts_dict[key]["lons"]
+            ys = self._ShPy_Obj.parts_dict[key]["lats"]
+            names = [key]*len(xs)
+            bottom_left, top_right = self._ShPy_Obj.bounding_box_by_key( key )
+        else: #whole enchalada
+            xs, ys, names = self._ShPy_Obj.lons_lats_keys
+            bottom_left, top_right = self._ShPy_Obj.bounding_box
+        all_codes = []
+        all_verts = []
+        for lons, lats in zip(xs,ys):
+            all_verts.append( list(zip(lons,lats)) )
+            all_codes.append( [Path.MOVETO] + [Path.LINETO]*(len(lons) - 2) + [Path.CLOSEPOLY] )
+
+        try:
+            x0,x1 = self.xlim
+        except:
+            x0,x1 = bottom_left[0], top_right[0]
+            xbuff = 0.01 * (x1 - x0)
+            x0 = x0 - xbuff
+            x1 = x1 + xbuff
+        try:
+            y0,y1 = self.ylim
+        except:
+            y0,y1 = bottom_left[1], top_right[1]
+            ybuff = 0.01 * (y1 - y0)
+            y0 = y0 - ybuff
+            y1 = y1 + ybuff
+
+        #get figure size
+        try:
+            xlen, ylen = self.figsize
+        except:
+            figsize = self.figsize
+            dx = x1-x0
+            dy = y1-y0
+            xy_ratio = dx/dy
+            if not isinstance(figsize,int): figsize = 5
+            xlen = int(xy_ratio * figsize)
+            ylen = figsize
+
+        fig = self._plt.figure( figsize = (xlen,ylen) )
+        ax = fig.add_subplot(111)
+        for i in range(len(all_verts)):
+            path = Path(all_verts[i], all_codes[i])
+            patch = patches.PathPatch(  path,
+                                        facecolor=self.facecolor,
+                                        alpha = self.alpha,
+                                        lw=self.border_width)
+            ax.add_patch(patch)
+        ax.set_xlim(x0,x1)
+        ax.set_ylim(y0,y1)
+        return fig, ax
+
+    def show_all( self, title = None ):
+        fig, ax = self._background_fig_ax()
+
+        if isinstance(title, str):
+            self._plt.title( title )
+        else:
+            self._plt.title("")
+        self._plt.show()
+
+    def show_key( self, key, title = None):
+        fig, ax = self._background_fig_ax( key = key )
+        if isinstance(title, str):
+            self._plt.title( title )
+        else:
+            self._plt.title("")
+        self._plt.title( title )
+        self._plt.show()
+
+    def show_points_over( self,
+                           pt_xs,
+                           pt_ys,
+                           pt_sizes = 70,
+                           pt_colors = 'red',
+                           pt_marker = 'o',
+                           pt_border_width = 0,
+                           pt_alpha = 0.67,
+                           key = None,
+                           title = None,
+                           **kwargs ):
+        fig, ax = self._background_fig_ax(key = key)
+        ax.scatter( pt_xs, pt_ys,
+                    s=pt_sizes,
+                    c=pt_colors,
+                    marker=pt_marker,
+                    lw=pt_border_width,
+                    alpha = pt_alpha,
+                    zorder = 1,
+                    **kwargs)
+        self._plt.title( title )
+        self._plt.show()
