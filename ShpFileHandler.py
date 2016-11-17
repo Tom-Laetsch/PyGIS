@@ -138,28 +138,21 @@ class ShPyVis( ShPy ):
                   figsize = 5,
                   xlim = None,
                   ylim = None,
-                  facecolor = 'blue',
-                  alpha = .33):
+                  patch_facecolor = 'white',
+                  patch_alpha = .33,
+                  patch_border_width = 1):
         self._ShPy_Obj = ShPy_Obj
         self._plt = plt
-        self.fig_attrs(figsize, xlim, ylim, facecolor, alpha)
+        self._plt_attr_dict = dict(
+                                    figsize = figsize,
+                                    xlim = xlim,
+                                    ylim = ylim,
+                                    patch_facecolor = patch_facecolor,
+                                    patch_alpha = patch_alpha,
+                                    patch_border_width = patch_border_width
+                                  )
 
-    def patch_attrs_setter( self,
-                            figsize = 5,
-                            xlim = None,
-                            ylim = None,
-                            facecolor = 'blue',
-                            alpha = 0.33,
-                            border_width = 1):
-
-        self.figsize = figsize
-        self.xlim = xlim
-        self.ylim = ylim
-        self.facecolor = facecolor
-        self.alpha = alpha
-        self.border_width = border_width
-
-    def _background_fig_ax( self, key = None ):
+    def _background_fig_ax( self, key = None, **kwargs ):
         from matplotlib.path import Path
         import matplotlib.patches as patches
         if key in self._ShPy_Obj.parts_dict.keys():
@@ -176,15 +169,21 @@ class ShPyVis( ShPy ):
             all_verts.append( list(zip(lons,lats)) )
             all_codes.append( [Path.MOVETO] + [Path.LINETO]*(len(lons) - 2) + [Path.CLOSEPOLY] )
 
+        xlim = kwargs.get('xlim', self._plt_attr_dict.setdefault('xlim', None))
+        if not xlim is None:
+            self._plt_attr_dict['xlim'] = xlim
+        ylim = kwargs.get('ylim', self._plt_attr_dict.setdefault('ylim', None))
+        if not ylim is None:
+            self._plt_attr_dict['ylim'] = ylim
         try:
-            x0,x1 = self.xlim
+            x0,x1 = xlim
         except:
             x0,x1 = bottom_left[0], top_right[0]
             xbuff = 0.01 * (x1 - x0)
             x0 = x0 - xbuff
             x1 = x1 + xbuff
         try:
-            y0,y1 = self.ylim
+            y0,y1 = ylim
         except:
             y0,y1 = bottom_left[1], top_right[1]
             ybuff = 0.01 * (y1 - y0)
@@ -192,10 +191,11 @@ class ShPyVis( ShPy ):
             y1 = y1 + ybuff
 
         #get figure size
+        figsize = kwargs.get('figsize', self._plt_attr_dict.setdefault('figsize', 5) )
         try:
-            xlen, ylen = self.figsize
+            xlen, ylen = figsize
         except:
-            figsize = self.figsize
+            figsize = figsize
             dx = x1-x0
             dy = y1-y0
             xy_ratio = dx/dy
@@ -205,32 +205,32 @@ class ShPyVis( ShPy ):
 
         fig = self._plt.figure( figsize = (xlen,ylen) )
         ax = fig.add_subplot(111)
+        patch_facecolor = kwargs.get('facecolor', kwargs.get('patch_facecolor', self._plt_attr_dict.setdefault('patch_facecolor', 'white')))
+        patch_alpha = kwargs.get('alpha', kwargs.get('patch_alpha', self._plt_attr_dict.setdefault('patch_alpha', 0.33)))
+        patch_border_width = kwargs.get('lw', kwargs.get('patch_border_width', self._plt_attr_dict.setdefault('patch_border_width', 1)))
         for i in range(len(all_verts)):
             path = Path(all_verts[i], all_codes[i])
             patch = patches.PathPatch(  path,
-                                        facecolor=self.facecolor,
-                                        alpha = self.alpha,
-                                        lw=self.border_width)
+                                        facecolor = patch_facecolor,
+                                        alpha = patch_alpha,
+                                        lw = patch_border_width)
             ax.add_patch(patch)
         ax.set_xlim(x0,x1)
         ax.set_ylim(y0,y1)
         return fig, ax
 
-    def show_all( self, title = None ):
-        fig, ax = self._background_fig_ax()
+    def show( self, title = None, **kwargs ):
 
-        if isinstance(title, str):
-            self._plt.title( title )
-        else:
-            self._plt.title("")
+        fig, ax = self._background_fig_ax( key = None, **kwargs )
+
+        self._plt.title( title )
         self._plt.show()
 
-    def show_key( self, key, title = None):
-        fig, ax = self._background_fig_ax( key = key )
-        if isinstance(title, str):
-            self._plt.title( title )
-        else:
-            self._plt.title("")
+    def show_key( self, key, title = "", **kwargs):
+        #if no given xlen, ylen, we use default for key
+        kwargs.setdefault('xlim',None)
+        kwargs.setdefault('ylim',None)
+        fig, ax = self._background_fig_ax( key = key, **kwargs )
         self._plt.title( title )
         self._plt.show()
 
@@ -243,16 +243,18 @@ class ShPyVis( ShPy ):
                            pt_border_width = 0,
                            pt_alpha = 0.67,
                            key = None,
-                           title = None,
+                           title = "",
                            **kwargs ):
-        fig, ax = self._background_fig_ax(key = key)
+        if not key is None:
+            kwargs.setdefault('xlim',None)
+            kwargs.setdefault('ylim',None)
+        fig, ax = self._background_fig_ax( key = key, **kwargs )
         ax.scatter( pt_xs, pt_ys,
                     s=pt_sizes,
                     c=pt_colors,
                     marker=pt_marker,
                     lw=pt_border_width,
                     alpha = pt_alpha,
-                    zorder = 1,
-                    **kwargs)
+                    zorder = 1 )
         self._plt.title( title )
         self._plt.show()
