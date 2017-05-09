@@ -138,11 +138,19 @@ class ShPyVis( ShPy ):
                   figsize = 5,
                   xlim = None,
                   ylim = None,
-                  patch_facecolor = 'white',
+                  patch_facecolor = {'default':'white'},
                   patch_alpha = .33,
                   patch_border_width = 1):
         self._ShPy_Obj = ShPy_Obj
         self._plt = plt
+        # make sure patch_facecolor is up to snuff
+        if not isinstance( patch_facecolor, dict ):
+            if isinstance( patch_facecolor, str ):
+                patch_facecolor = dict( default = patch_facecolor )
+            else:
+                patch_facecolor = dict( default = 'white' )
+        else:
+            patch_facecolor.update( dict( default = patch_facecolor.get('default', 'white') ) )
         self._plt_attr_dict = dict(
                                     figsize = figsize,
                                     xlim = xlim,
@@ -158,7 +166,7 @@ class ShPyVis( ShPy ):
         if key in self._ShPy_Obj.parts_dict.keys():
             xs = self._ShPy_Obj.parts_dict[key]["lons"]
             ys = self._ShPy_Obj.parts_dict[key]["lats"]
-            names = [key]*len(xs)
+            names = [key]
             bottom_left, top_right = self._ShPy_Obj.bounding_box_by_key( key )
         else: #whole enchalada
             xs, ys, names = self._ShPy_Obj.lons_lats_keys
@@ -209,9 +217,16 @@ class ShPyVis( ShPy ):
         patch_alpha = kwargs.get('alpha', kwargs.get('patch_alpha', self._plt_attr_dict.setdefault('patch_alpha', 0.33)))
         patch_border_width = kwargs.get('lw', kwargs.get('patch_border_width', self._plt_attr_dict.setdefault('patch_border_width', 1)))
         for i in range(len(all_verts)):
+            #get the patch facecolor
+            pfc = self._plt_attr_dict.get('patch_facecolor', dict())
+            try:
+                facecolor = pfc[names[i]]
+            except:
+                facecolor = pfc.get('default','white')
+
             path = Path(all_verts[i], all_codes[i])
             patch = patches.PathPatch(  path,
-                                        facecolor = patch_facecolor,
+                                        facecolor = facecolor,
                                         alpha = patch_alpha,
                                         lw = patch_border_width)
             ax.add_patch(patch)
