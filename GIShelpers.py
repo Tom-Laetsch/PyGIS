@@ -1,5 +1,8 @@
 from __future__ import print_function, division
 
+from scipy.integrate import quad
+from numpy import cos, pi
+
 __all__ = ['in_polygon']
 
 def in_polygon(point, #(x,y) tuple to test if in polygon
@@ -30,3 +33,25 @@ def in_polygon(point, #(x,y) tuple to test if in polygon
     else:
         #if it intersects an odd number of times, it is inside
         return True
+
+def LonLatBox2Miles( lons, lats ):
+    lon_min = min( lons )
+    lon_max = max( lons )
+    lat_min = min( lats )
+    lat_max = max( lats )
+    equator_lon_fac = 69.172 # 1 deg lon = 69.172 mi @ equator
+    lat_fac = 69 # 1 deg lat = ~69 mi (range from 68.7 to 69.4)
+    def integrand( lat ):
+        return cos( pi * lat / 180 ) * equator_lon_fac * lat_fac * (lon_max - lon_min)
+    return quad( integrand, lat_min, lat_max )
+
+def LonLatBox2km( lons, lats ):
+    lon_min = min( lons )
+    lon_max = max( lons )
+    lat_min = min( lats )
+    lat_max = max( lats )
+    equator_lon_fac = 111.321 # 1 deg lon = 111.321 km @ equator
+    lat_fac = 111 # 1 deg lat = ~111km (range from 110.6 to 111.7)
+    def integrand( lat ):
+        return cos( pi * lat / 180 ) * equator_lon_fac * lat_fac * (lon_max - lon_min)
+    return quad( integrand, lat_min, lat_max )
